@@ -1,39 +1,60 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#pragma warning(disable: 4326 4996 6001 6031)
 
-#pragma warning (disable: 4326 4996)
+#define	NodeWIDTH	6
+#define	NodeGAP		1
 
-typedef struct tree {
-	char sName[9];			// 이름
-	int  nNo;
-	char sPosition[3];		// 포지션
-	char sBirthday[11];		// 생년월일 2002.06.04
-	int  nHeight;			// 키
-	int  nWeight;			// 몸무게
-	char sClub[30];
-	struct tree *lChild;
-	struct tree *rChild;
-}	Data, *DataPtr, Tree, *TreePtr, Node, *NodePtr;
+typedef const char* CPtr;
+typedef struct Node {
+	CPtr sName;			// 이름
+	CPtr sPosition;		// 포지션
+	CPtr sBirthday;		// 생년월일 2002.06.04
+	int  nHeight;		// 키
+	int  nWeight;		// 몸무게
+	CPtr sClub;
+	Node *lChild;
+	Node *rChild;
+}	*NodePtr, Data, *DataPtr, *TreePtr;
+
+void MakeSearchTree(TreePtr& pTree1, TreePtr& pTree2);
+TreePtr SearchTree(TreePtr pTree, char* sName);
+void ShowTree(TreePtr pTree);
+void SwapTree(TreePtr pTree);
+bool EqualTree(TreePtr pTree1, TreePtr pTree2);
+void Inorder(TreePtr pTree);
+TreePtr InsertNode1(TreePtr pTree, DataPtr pNode);
+void InsertNode2(TreePtr& pTree, DataPtr pNode);
 
 void main()
 {
-	void MakeSearchTree(TreePtr& pTree1, TreePtr& pTree2);
-	TreePtr SearchTree(TreePtr pTree, char *sName);
 	TreePtr pTree1 = NULL, pTree2 = NULL;
 	MakeSearchTree(pTree1, pTree2);
+	printf("[pTree1]\n");
+	ShowTree(pTree1);
+	putchar('\n');
+	printf("[pTree2]\n");
+	ShowTree(pTree2);
+	putchar('\n');
+
 	TreePtr pTree = pTree1;
 	while (1) {
 		void SwapTree(TreePtr pTree);
 		bool EqualTree(TreePtr pTree1, TreePtr pTree2);
 		void Inorder(TreePtr pTree);
+
 		char sCmnd[20];
 		printf("[sqnx*e] ? ");
 		gets_s(sCmnd);							// 명령을 입력한다.
 		TreePtr pNode;
-		switch (*sCmnd | 0x20) {
+		switch (*sCmnd) {
 		case 'e':								// 아무런 명령이 없으면
 			return;
+		case '1':								// 트리 pTree1을 출력한다
+		case '2':								// 트리 pTree2를 출력한다
+			ShowTree(*sCmnd == '1' ? pTree1 : pTree2);
+			break;
 		case 's':								// 트리의 왼쪽과 오른쪽 자식을 바꾼다
 			SwapTree(pTree);
 			printf("Swap: Tree%d\n", (pTree == pTree1) ? 1 : 2);
@@ -46,20 +67,13 @@ void main()
 			putchar('\n');
 			break;
 		 case 'x':								// 탐색 대상을 pTree1과 pTree2를 바꾼다.
-			if (pTree == pTree1) {
-				pTree = pTree2;
-				printf("pTree2 사용\n");
-			}
-			else {
-				pTree = pTree1;
-				printf("pTree1 사용\n");
-			}
+			pTree = (pTree == pTree2) ? pTree1 : pTree2;
+			printf("pTree%c 사용\n", 0x31 + (pTree == pTree2));
 			break;
 		 default:								// 검색할 선수의 이름으로 간주
 			pNode = SearchTree(pTree, sCmnd);	// 검색을 한다.
 			if (pNode) {
 				printf("    이름: %s\n", pNode->sName);
-				printf("      No: %d\n", pNode->nNo);
 				printf("  포지션: %s\n", pNode->sPosition);
 				printf("생년월일: %s\n", pNode->sBirthday);
 				printf("      키: %d\n", pNode->nHeight);
@@ -73,12 +87,10 @@ void main()
 	}
 }
 
-void MakeSearchTree(TreePtr& pTree1, TreePtr& pTree2)
-{
 #include "nationalTeam.h"
 
-	TreePtr InsertNode1(TreePtr pTree, DataPtr pNode);
-	void InsertNode2(TreePtr& pTree, DataPtr pNode);
+void MakeSearchTree(TreePtr &pTree1, TreePtr &pTree2)
+{
 	for (int i = 0; i < sizeof(nationalTeam) / sizeof(nationalTeam[0]); i++) {
 		pTree1 = InsertNode1(pTree1, nationalTeam + i);
 		InsertNode2(pTree2, nationalTeam + i);
@@ -125,6 +137,64 @@ void SwapTree(TreePtr pTree)
 bool EqualTree(TreePtr pTree1, TreePtr pTree2)
 {
 	// 두 트리를 같은지 비교하여 true/false를 return한다.
-	// 두 노드는 sName, nNo 두 필드만 비교하여 판단한다.
+	// 두 노드는 sName 필드만 비교하여 판단한다.
 	return true;
+}
+
+void PrintGap(int nCtr)
+{
+	for (int i = 0; i < nCtr; i++)
+		putchar(0x20);
+}
+
+void PrintData(const char* sName)
+{
+	static char strFmt[] = { '%', 0x30 + NodeWIDTH, 's', 0 };
+	printf(strFmt, sName);
+}
+
+
+int TreeHeight(TreePtr pTree)
+{
+	int nHeight = 0;
+	if (pTree) {
+		int nlHeight = TreeHeight(pTree->lChild);
+		int nrHeight = TreeHeight(pTree->rChild);
+		nHeight = (nlHeight > nrHeight ? nlHeight : nrHeight) + 1;
+	}
+	return nHeight;
+}
+
+void ShowTree(TreePtr pTree)
+{
+	if (pTree == NULL)
+		return;
+	TreePtr arNode1[256], arNode2[256] = { pTree, NULL };
+	int nHeight = TreeHeight(pTree);
+	int nMaxLvlNode = 1;
+	for (int i = 1; i < nHeight; i++)
+		nMaxLvlNode *= 2;
+	int nWidth = (NodeWIDTH + NodeGAP) * nMaxLvlNode;
+	for (int nLevel = 1, nCtr = 1; nLevel <= nHeight; nLevel++, nCtr *= 2) {
+		for (int i = 0; i < nCtr; i++)
+			arNode1[i] = arNode2[i];
+		float fAvgGap = (float)(nWidth - nCtr * NodeWIDTH) / nCtr;
+		for (int i = 0, nGapSum = 0; i < nCtr; i++) {
+			int nGapNow = (int)(fAvgGap / 2 + (NodeWIDTH + fAvgGap) * i);
+			PrintGap(nGapNow - nGapSum);
+			arNode1[i] ? PrintData(arNode1[i]->sName) : PrintGap(NodeWIDTH);
+			nGapSum = nGapNow + NodeWIDTH;
+			arNode2[2 * i] = arNode1[i] ? arNode1[i]->lChild : NULL;
+			arNode2[2 * i + 1] = arNode1[i] ? arNode1[i]->rChild : NULL;
+		}
+		putchar('\n');
+	}
+}
+
+int CountNode(TreePtr pTree)
+{
+	int nCtr = 0;
+	if (pTree)
+		nCtr = CountNode(pTree->lChild) + CountNode(pTree->rChild) + 1;
+	return nCtr;
 }

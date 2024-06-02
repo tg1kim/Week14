@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#pragma warning(disable: 4326 4996 6001 6031)
 
 #define TRIAL		10
 #define RUNctr		16
 #define DataRANGE	4000
 #define DataNEXT	5000
-#pragma warning (disable: 4326 4996)
 
 void SetupLeafNode(int nTree[], int nData[]);
 void FirstSelectionTree(int nTree[], int nData[]);
@@ -82,6 +82,9 @@ void PrintSelectionTree(int nTree[], int nData[])
 		}
 		putchar('\n');
 	}
+	for (int i = 0; i < RUNctr; i++)
+		printf(" %02d   ", i);
+	printf("\n\n");
 	for (int i = 0; i < RUNctr; i++)
 		printf("[%02d]  ", i);
 	putchar('\n');
